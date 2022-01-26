@@ -47,7 +47,7 @@ export class Demangler implements Stringifyer {
             offset,
             isConstant,
             initialLength
-        ] = this.stream.parse(new RegExp(`_Z(?:(T)(V|I|S|hn(\\d+)_))?N?(K)?(\\d*)`));
+        ] = this.stream.parse(new RegExp(`^_Z(?:(T)(V|I|S|hn(\\d+)_))?N?(K)?(\\d*)`));
         const objectInfo: ClassMethodInfo = {
             isConstructor: false,
             isDestructor: false
@@ -151,7 +151,7 @@ export class Demangler implements Stringifyer {
         let match: RegExpExecArray;
         let ongoing = true;
 
-        while (this.stream.leftOverLength() && ongoing && (match = this.stream.parse(new RegExp(`(\\w{${length}})(?:(I)|(?:(\\d+)|(D|C)?\\d*))`)))) {
+        while (this.stream.leftOverLength() && ongoing && (match = this.stream.parse(new RegExp(`^(\\w{${length}})(?:(I)|(?:(\\d+)|(D|C)?\\d*))`)))) {
             const nextLength = parseInt(match[3]);
 
             handler(match, () => ongoing = false);
@@ -231,7 +231,7 @@ export class Demangler implements Stringifyer {
         let match: RegExpExecArray;
         let ongoing = true;
 
-        while (this.stream.leftOverLength() && ongoing && (match = this.stream.parse(new RegExp(`([PR]*)(K)?(C)?N?(?:E|(${REGEX_TYPES}|S(\\d*)_)(I|\\d*))`)))) {
+        while (this.stream.leftOverLength() && ongoing && (match = this.stream.parse(new RegExp(`^([PR]*)(K)?(C)?N?(?:E|(${REGEX_TYPES}|S(\\d*)_)(I|\\d*))`)))) {
             if (match[0] == "E") {
                 ongoing = false;
             } else {
