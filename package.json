@@ -1,6 +1,6 @@
 {
   "name": "demangler",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "An Itanium ABI symbol demangler",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
