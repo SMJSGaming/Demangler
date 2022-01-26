@@ -13,7 +13,7 @@
     "declaration": true,
     "noImplicitAny": false,
     "noUnusedLocals": true,
-    "removeComments": false,
+    "removeComments": true,
     "esModuleInterop": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
