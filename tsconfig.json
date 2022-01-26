@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "module": "CommonJS",
+    "target": "ES2020",
+    "lib": [
+      "ES2017",
+      "ES7",
+      "ES6",
+      "DOM"
+    ],
+    "strict": true,
+    "declaration": true,
+    "noImplicitAny": false,
+    "noUnusedLocals": true,
+    "removeComments": false,
+    "esModuleInterop": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": [
+    "src/**/*.ts"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "name": "demangler",
+  "version": "1.0.1",
+  "description": "An Itanium ABI symbol demangler",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "prepublish": "tsc"
+  },
+  "author": "SMJS",
+  "license": "MIT",
+  "keywords": [
+    "Itanium",
+    "Itanium ABI",
+    "C++",
+    "Assembly",
+    "symbol",
+    "parser"
+  ],
+  "dependencies": {
+    "std-node": "^1.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.12"
+  }
+}
