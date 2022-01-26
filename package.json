@@ -1,6 +1,6 @@
 {
   "name": "demangler",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "An Itanium ABI symbol demangler",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,6 +17,10 @@
     "symbol",
     "parser"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SMJSGaming/Demangler"
+  },
   "dependencies": {
     "std-node": "^1.2.1"
   },
