@@ -1,26 +1,15 @@
 import { BetterObject, callback, Stringifyer } from "std-node";
 
-import { Type } from "../enums/Type";
+import { TYPES } from "../constants/TYPES";
+import { REGEX_TYPES } from "../constants/REGEX_TYPES";
+import { SECTION_ORDER } from "../constants/SECTION_ORDER";
 import { NotMangledError } from "../errors/NotMangledError";
 import { Parameter } from "../interfaces/Parameter";
+import { ObjectInfo } from "../interfaces/ObjectInfo";
 import { ClassMethodInfo } from "../interfaces/ClassMethodInfo";
 import { RegexStream } from "./RegexStream";
-import { ObjectInfo } from "../interfaces/ObjectInfo";
 
 export class Demangler implements Stringifyer {
-
-    private static TYPES = Object.values(Type).join("|");
-
-    private static TYPE_OBJECT = Object.fromEntries(Object.entries(Type).map(([ key, value ]) => [
-        value,
-        key.toLowerCase().replace(/_{2,}|_(?!t$|string)/g, (str) => str.length == 2 ? "::" : " ")
-    ]));
-
-    private static SECTION_ORDER = [
-        "isComplex",
-        "isConstant",
-        "memoryType"
-    ];
 
     public readonly isType: boolean;
 
@@ -57,9 +46,8 @@ export class Demangler implements Stringifyer {
             typeId,
             offset,
             isConstant,
-            baseType,
             initialLength
-        ] = this.stream.parse(new RegExp(`_Z(?:(T)(V|I|S|hn(\\d+)_))?N?(K)?(${Demangler.TYPES})?(\\d+)`));
+        ] = this.stream.parse(new RegExp(`_Z(?:(T)(V|I|S|hn(\\d+)_))?N?(K)?(\\d*)`));
         const objectInfo: ClassMethodInfo = {
             isConstructor: false,
             isDestructor: false
@@ -73,17 +61,7 @@ export class Demangler implements Stringifyer {
         this.thunkOffset = parseInt(offset) || null;
         this.isConstant = Boolean(isConstant);
         this.sections = [];
-        this.objects = [];
-        this.sections = [];
-
-        if (baseType) {
-            this.objects.push({
-                object: Demangler.TYPE_OBJECT[baseType],
-                templates: []
-            });
-        }
-
-        this.objects.push(...this.getObjects(parseInt(initialLength), objectInfo));
+        this.objects = [ ...this.getObjects(parseInt(initialLength), objectInfo) ];
         this.sections.push(...this.objects.map((section, index) => [ ...this.objects.slice(0, index), section ]).slice(1, -1));
         this.isClassConstructor = objectInfo.isConstructor;
         this.isClassDestructor = objectInfo.isDestructor;
@@ -139,11 +117,12 @@ export class Demangler implements Stringifyer {
 
     private getObjects(initialLength: number, specialInfo?: ClassMethodInfo): ObjectInfo[] {
         const objects: ObjectInfo[] = [];
+        const isStd = this.stream.test(/^(Sa|Sb|Sd|Si|So|Ss|St)/);
 
-        if (!isNaN(initialLength)) {
-            this.objectParser(initialLength, ([ _, object, hasTemplate, nextLength, specialMethod ]) => {
+        if (!isNaN(initialLength) || isStd) {
+            this.objectParser(isStd ? 2 : initialLength, ([ _, object, hasTemplate, nextLength, specialMethod ]) => {
                 objects.push({
-                    object,
+                    object: objects.length == 0 && isStd ? TYPES.get(object)! : object,
                     templates: hasTemplate ? this.getParameters() : []
                 });
 
@@ -190,7 +169,8 @@ export class Demangler implements Stringifyer {
         const parameters: Parameter[] = [];
 
         this.parameterParser(([ _, memoryTypeChars, isConstant, isComplex, type, substitute, next ]) => {
-            const isStaticType = Boolean(Demangler.TYPE_OBJECT[type]);
+            const staticType = TYPES.get(type);
+            const nextLength = parseInt(next);
             const objects: ObjectInfo[] = [];
             const parameter: Parameter = {
                 isComplex: Boolean(isComplex),
@@ -199,9 +179,9 @@ export class Demangler implements Stringifyer {
                 type: []
             };
 
-            if (isStaticType) {
+            if (staticType) {
                 objects.push({
-                    object: Demangler.TYPE_OBJECT[type],
+                    object: staticType,
                     templates: next == "I" ? this.getParameters() : []
                 });
             } else if (type.startsWith("S")) {
@@ -229,7 +209,9 @@ export class Demangler implements Stringifyer {
                 }
             }
 
-            objects.push(...this.getObjects(parseInt(next)));
+            if (!isNaN(nextLength)) {
+                objects.push(...this.getObjects(nextLength));
+            }
 
             if (objects.length) {
                 parameter.type = objects;
@@ -249,7 +231,7 @@ export class Demangler implements Stringifyer {
         let match: RegExpExecArray;
         let ongoing = true;
 
-        while (this.stream.leftOverLength() && ongoing && (match = this.stream.parse(new RegExp(`([PR]*)(K)?(C)?N?(?:E|(${Demangler.TYPES}|S(\\d*)_)(I|\\d*))`)))) {
+        while (this.stream.leftOverLength() && ongoing && (match = this.stream.parse(new RegExp(`([PR]*)(K)?(C)?N?(?:E|(${REGEX_TYPES}|S(\\d*)_)(I|\\d*))`)))) {
             if (match[0] == "E") {
                 ongoing = false;
             } else {
@@ -262,7 +244,8 @@ export class Demangler implements Stringifyer {
         /*
             Section order:
 
-            - Basic
+            - Base
+            - Types in the templates which start from Base order wise
             - Templates
             - Complex
             - Const
@@ -290,7 +273,7 @@ export class Demangler implements Stringifyer {
             sections.push(source);
         }
 
-        Demangler.SECTION_ORDER.filter((typeInfo) => parameter[typeInfo]?.length ?? parameter[typeInfo]).forEach((typeInfo) => {
+        SECTION_ORDER.filter((typeInfo) => parameter[typeInfo]?.length ?? parameter[typeInfo]).forEach((typeInfo) => {
             const source = Object.assign({}, sections[sections.length - 1]);
 
             if (typeof source[typeInfo] == "boolean") {

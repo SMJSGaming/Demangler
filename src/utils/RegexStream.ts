@@ -23,6 +23,10 @@ export class RegexStream {
         }
     }
 
+    public test(regex: RegExp): boolean {
+        return regex.test(this.input);
+    }
+
     public leftOverLength(): number {
         return this.input.length;
     }
