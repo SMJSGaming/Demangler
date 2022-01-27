@@ -168,9 +168,9 @@ export class Demangler implements Stringifyer {
     private getParameters(): Parameter[] {
         const parameters: Parameter[] = [];
 
-        this.parameterParser(([ _, memoryTypeChars, isConstant, isComplex, type, substitute, next ]) => {
+        this.parameterParser(([ _, memoryTypeChars, isConstant, isComplex, startLength, type, substitute, next ]) => {
             const staticType = TYPES.get(type);
-            const nextLength = parseInt(next);
+            const nextLength = parseInt(next) || parseInt(startLength);
             const objects: ObjectInfo[] = [];
             const parameter: Parameter = {
                 isComplex: Boolean(isComplex),
@@ -184,11 +184,10 @@ export class Demangler implements Stringifyer {
                     object: staticType,
                     templates: next == "I" ? this.getParameters() : []
                 });
-            } else if (type.startsWith("S")) {
+            } else if (type?.startsWith("S")) {
                 const substituteNumber = parseInt(substitute);
-                const isInvalidNumber = isNaN(substituteNumber);
 
-                if (isInvalidNumber && this.objects.length > 1) {
+                if (isNaN(substituteNumber) && this.objects.length > 1) {
                     objects.push(this.objects[0]);
                 } else if (this.sections.length) {
                     const original = this.sections[substituteNumber] || this.sections[this.sections.length - 1];
@@ -231,7 +230,7 @@ export class Demangler implements Stringifyer {
         let match: RegExpExecArray;
         let ongoing = true;
 
-        while (this.stream.leftOverLength() && ongoing && (match = this.stream.parse(new RegExp(`^([PR]*)(K)?(C)?N?(?:E|(${REGEX_TYPES}|S(\\d*)_)(I|\\d*))`)))) {
+        while (this.stream.leftOverLength() && ongoing && (match = this.stream.parse(new RegExp(`^([PR]*)(K)?(C)?N?(?:E|(\\d+)|(${REGEX_TYPES}|S(\\d*)_)(I|\\d*))`)))) {
             if (match[0] == "E") {
                 ongoing = false;
             } else {
